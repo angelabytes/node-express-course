@@ -52,6 +52,7 @@ const server = http.createServer((req, res) => {
       // here, you can add your own logic
       guess = Number(body["guess"]) || NaN; 
     
+      //Tells the user if they won or not
       if (guess === randomNumber) {
         message = `Congratulations you've won!`;
       }
@@ -70,6 +71,10 @@ const server = http.createServer((req, res) => {
   } else {
     res.end(form());
   }
+});
+
+server.on("request", (req) => {
+  console.log("event received: ", req.method, req.url);
 });
 
 server.listen(3000);
