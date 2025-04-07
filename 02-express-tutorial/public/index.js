@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const productList = document.querySelector(".product-list");
             productList.textContent = '';
 
+            //Dynamically creates the html elements for index html.
             products.map( (product) => {
                 const productDiv = document.createElement('div');
                 const productName = document.createElement('h2');
@@ -57,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     displayProducts();
 
+    //listener for the select drop down
     filterSelect.addEventListener('change', (e) => {
         const selectOrder = e.target.value;
         displayProducts(selectOrder);
