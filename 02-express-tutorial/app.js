@@ -1,24 +1,53 @@
 const express = require('express');
 const app = express();
-const { products } = require("./data");
+const products = require('./data');
+const peopleRouter = require('./routes/people');
+const cookieParser = require('cookie-parser');
 const port = 3000;
 
 
-app.use(express.static("./public"));
+app.use(express.static('./public'));
 
 app.get('/api/v1/test', (req, res) => {
     res.json({message: "It worked!"});
 });
 
+//Define logger
+const logger = ('/', (req, res, next) => {
+    const method = req.method;
+    const url = req.url;
+    const time = new Date().toLocaleDateString();
+    console.log(`${[time]} ${method} ${url}`);
+    next();
+});
+
+//alternate way to define logger
+// app.use(["/path1", "/path2"], logger);
+
+
+
+//Gets all products, uses logger
+// app.get('/api/v1/products', logger, (req, res) => {
+//     const allProducts = products.map((product) => {
+//         const {id, name, price} = product;
+//         return {id, name, price}
+//     });
+//     res.json(allProducts);
+// });
 
 //Gets all products
-app.get('/api/v1/products/', (req, res) => {
+app.get('/api/v1/products', (req, res) => {
     const allProducts = products.map((product) => {
         const {id, name, price} = product;
         return {id, name, price}
     });
-    res.json(products);
+    res.json(allProducts);
 });
+
+//uses logger on all paths
+app.use(logger);
+
+
 
 /**
  * Gets the product by id where ID is a numerical value
@@ -95,6 +124,100 @@ app.get('/api/v1/sorted', (req, res) => {
 });
 
 
+
+/**
+ * Gets all people from data.js
+ */
+
+// app.get('/api/v1/people', (req, res) => {
+//     const allPersons = people.map((person) =>{
+//         const { id, name } = person;
+//         return { id, name };
+//     });
+//     res.json(allPersons);
+// });
+
+
+/**
+ * Middleware that parse the body into a Javascript object
+ * Returns the result as a hash in requesting body
+ */
+
+
+/**
+ * Post people.
+ */
+// app.post('api/v1/people', (req, res) => {
+//     if(!req.body.name){
+//         res.status(400).json({ success: false, message: "Please provide a name" });
+//     }
+//     people.push({id: people.length + 1, name: req.body.name });
+//     res.status(201).json({ success: true, name: req.body.name });
+// });
+
+//parse for form
+app.use(express.urlencoded({ extended: false }));
+//parse for json
+app.use(express.json());
+app.use(cookieParser());
+
+app.use('/api/v1/people', peopleRouter);
+
+
+//Creates auth
+const auth = (req, res, next) => {
+    const cookie_name = req.cookies.name;
+    if (cookie_name) {
+        req.user = cookie_name;
+        next();
+    }
+    else {
+        return res.status(401).json({ message: "unauthorized" });
+    }
+    
+}
+
+/**
+ * Auth logon
+ * returns: hello message if name is found, else returns a message telling a name is required.
+ * method: post
+ * route: localhost:3000/logon
+ */
+app.post('/logon', (req, res) => {
+    const { name } = req.body;
+
+    if (name) {
+        res.cookie("name", name);
+        return res.status(201).json({ message: `Hello ${name}` });
+    }
+    else {
+        return res.status(400).json({ message: "A name is required." });
+    }
+});
+
+/**
+ * Auth logoff
+ * Clears the cookie with requested name
+ * method: delete
+ * route: localhost:3000/logoff
+ */
+app.delete('/logoff', (req, res) => {
+    res.clearCookie("name");
+    return res.status(200).json({ message: "User is logged off." });  
+});
+
+/**
+ * Auth test
+ * Clears the cookie with requested 
+ * method: get
+ * route: localhost:3000/test
+ * returns: welcome message or unauthorized message
+ */
+app.get('/test', auth, (req, res) => {
+    return res.status(200).json({ message: `Welcome ${req.user}`});
+});
+
+//Catch all, should go after evething else: get, post, etc.
 app.all('*', (req, res) => {
     res.status(404).send('<h1>Page Not Found</h1>');
 });
